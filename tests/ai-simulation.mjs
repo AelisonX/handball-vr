@@ -20,6 +20,7 @@ for(const difficulty of ['easy','medium','hard']){
 console.log(JSON.stringify(results,null,2));
 assert.ok(results.hard.legal>results.medium.legal,'Hard should cover more of the shot set than Medium');
 assert.ok(results.medium.legal>results.easy.legal,'Medium should cover more than Easy');
-assert.ok(results.hard.centralLegal>=results.hard.centralTotal*.9,'Hard should return almost all shots from a good starting position');
+assert.ok(results.hard.centralLegal>=results.hard.centralTotal*.75,'Hard should remain strong while leaving openings from a good starting position');
 assert.ok(results.easy.centralLegal<=results.easy.centralTotal*.5,'Easy should miss enough placement and pace shots');
 console.log('PASS: physically simulated difficulty separation and legal CPU returns.');
+

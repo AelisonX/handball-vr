@@ -1,5 +1,6 @@
 import * as T from 'three';
 export class Motion {
+  constructor(private maxSpeed=6){}
   samples:{p:T.Vector3,t:number}[]=[];
   record(p:T.Vector3,t:number) {
     this.samples.push({p:p.clone(),t});
@@ -9,7 +10,7 @@ export class Motion {
     const a=this.samples[0],b=this.samples.at(-1);
     if(!a||!b||b.t-a.t<.008)return new T.Vector3();
     const v=b.p.clone().sub(a.p).divideScalar(b.t-a.t);
-    return v.clampLength(0,6);
+    return v.clampLength(0,this.maxSpeed);
   }
   clear(){this.samples.length=0;}
 }

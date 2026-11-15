@@ -1,14 +1,24 @@
 # Handball VR - The Courtyard
 
-v0.4.0 Quest and desktop playtest. Separate project built from selected Bean There VR systems. Bean There VR files and services are untouched.
+v0.4.1 local playtest (not published). Separate project built from selected Bean There VR systems. Bean There VR files and services are untouched.
 
 ## Play locally
 
 Open `handball-desktop.html`, or double-click `START-PC.cmd`. No server is required for PC practice and CPU play. For a full project checkout: `npm ci`, then `npm run dev -- --port 5176 --strictPort`.
 
+## Local v0.4.1 CPU refinement
+
+Approved defaults: hitPower 1.00 and bounce 0.90. Existing saved browser settings still take priority; Reset defaults loads these values.
+
+The CPU now predicts incoming trajectories for 3.4-4.2 seconds and considers physical contacts up to 2.2 m, instead of rejecting everything over 1.65 m. Reaction delay, foot speed, targeting error and fast-shot tolerance remain difficulty dependent. All difficulties can return soft, medium and fast shots when reachable; impossible shots remain misses. CPU gloves follow the higher contact height.
+
+Versus CPUs cycle through drive, lob, drop, topspin, backspin and sidespin strokes with varied pace. The planner evaluates actual hand impulses, air curvature, walls and the required floor bounces before choosing a shot. Spin comes from off-centre contact rather than changing angular velocity directly. Rally partner keeps aiming gentle returns toward the player, with a higher preferred receiving window.
+
+82 unit checks pass, plus the existing 81-shot baseline and a new 81-shot mixed-height/pace simulation. The mixed simulation returns are Easy 27, Medium 39, Hard 55, Rally 67. Every difficulty returned shots in all three pace bands (3, 7, 12 m/s). These are test-set counts, not promised player win rates. Handset feel and a new cross-device multiplayer test are pending. No GitHub or Render publishing was performed for this revision.
+
 ## v0.4 controls and tuning
 
-Options provides Bounce, Hit strength, Gravity, Spin effect and Air resistance sliders. Exact shareable values appear beneath them. Settings save on that browser/device. The new defaults are bounce 0.88, hitPower 0.92, gravity 9.81, spin 1, airDrag 0.010. In multiplayer the host controls settings and the snapshots synchronize them to the guest. The host can switch the current full-court game between Versus and Practice (no points, catches allowed) in Options. Switching restarts the serve/score, keeping the connection.
+Options provides Bounce, Hit strength, Gravity, Spin effect and Air resistance sliders. Exact shareable values appear beneath them. Settings save on that browser/device. The new defaults are bounce 0.90, hitPower 1.00, gravity 9.81, spin 1, airDrag 0.010. In multiplayer the host controls settings and the snapshots synchronize them to the guest. The host can switch the current full-court game between Versus and Practice (no points, catches allowed) in Options. Switching restarts the serve/score, keeping the connection.
 
 A bad serve now retries with the same server and no point lost, until it has legally reached the opponent's receiving bounce. Faults during an established versus rally still score. A stopped toss gets 2.5 seconds of rest before resetting. Serve retries return the ball near the server's hand when a hand pose is available.
 

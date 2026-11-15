@@ -1,13 +1,14 @@
 import {Vector3} from 'three';
-import {Ball} from './ball';
+import {Ball,COURT} from './ball';
 import {Match,side,type Difficulty} from './match';
-import {bounceShot,handVelocityForShot} from './shots';
+import {bounceShot,handVelocityForShot,friendlyShot,legalReturn} from './shots';
 import type {CourtGame} from './court-game';
 
 export const CPU_SETTINGS={
  easy:{speed:1.05,reaction:.48,horizon:.65,error:.32,reach:.55,afterBounce:.15,fastThreshold:5.5,fastPenalty:.055,shotSpeed:3.6},
  medium:{speed:2.1,reaction:.14,horizon:.85,error:.07,reach:.65,afterBounce:.035,fastThreshold:10,fastPenalty:.014,shotSpeed:5.2},
- hard:{speed:2.5,reaction:.045,horizon:2.4,error:.012,reach:.78,afterBounce:.006,fastThreshold:14,fastPenalty:.003,shotSpeed:7.4},
+ hard:{speed:2.35,reaction:.085,horizon:2.1,error:.035,reach:.73,afterBounce:.018,fastThreshold:12,fastPenalty:.006,shotSpeed:6.1},
+ rally:{speed:3.4,reaction:.025,horizon:3.2,error:0,reach:.85,afterBounce:.012,fastThreshold:16,fastPenalty:0,shotSpeed:3.5},
 } as const;
 export type Intercept={p:Vector3,t:number};
 export function predictIntercept(ball:Ball,match:Match,seat:number,horizon=2.2,origin?:Vector3,speed=2.5,reach=.78):Intercept|undefined{
@@ -34,11 +35,11 @@ export class CpuPlayer {
   const incoming=match.lastHitter===0&&['serve','rally'].includes(match.phase),fastLag=Math.max(0,ball.v.length()-cfg.fastThreshold)*cfg.fastPenalty;
   if(time>=this.nextDecision){
    this.nextDecision=time+cfg.reaction+fastLag;
-   const intercept=incoming?predictIntercept(ball,match,1,cfg.horizon,match.difficulty==='hard'?this.position:undefined,cfg.speed,cfg.reach):undefined;
+   const intercept=incoming?predictIntercept(ball,match,1,cfg.horizon,['hard','rally'].includes(match.difficulty)?this.position:undefined,cfg.speed,cfg.reach):undefined;
    if(intercept){this.target.copy(intercept.p);this.target.x+=Math.sin((match.rally+match.score[0]*7+match.score[1]*13+1)*2.17)*cfg.error;this.target.z-=.22;}
    else if(incoming&&ball.p.z<0&&match.difficulty==='easy'){this.target.copy(ball.p);this.target.z-=.25;}
    else this.target.set(0,0,-2.65);
-   this.target.x=Math.max(-2.12,Math.min(2.12,this.target.x));this.target.z=Math.max(-3.5,Math.min(-.5,this.target.z));this.target.y=0;
+   this.target.x=Math.max(-COURT.halfWidth+.3,Math.min(COURT.halfWidth-.3,this.target.x));this.target.z=Math.max(-COURT.halfLength+.4,Math.min(-.5,this.target.z));this.target.y=0;
   }
   this.position.add(this.target.clone().sub(this.position).clampLength(0,cfg.speed*dt));
   const legal=match.canReturn(1);
@@ -46,8 +47,8 @@ export class CpuPlayer {
   if(time-this.legalSince<cfg.afterBounce+fastLag||time-this.lastShot<.12||ball.p.y<.25||ball.p.y>1.65||ball.p.y<.65&&ball.v.y>0)return;
   const distance=Math.hypot(ball.p.x-this.position.x,ball.p.z-(this.position.z+.22));if(distance>cfg.reach)return;
   const targetX=match.difficulty==='easy'?Math.sin(time)*.5:match.difficulty==='medium'?Math.sin(match.rally*1.7)*.9:playerPosition.x>=0?-1.95:1.95;
-  const outgoing=bounceShot(ball.p,1,cfg.shotSpeed,targetX),stroke=handVelocityForShot(ball.v,outgoing,false,ball.w);
+  const outgoing=match.difficulty==='rally'?friendlyShot(ball,playerPosition):legalReturn(ball,1,cfg.shotSpeed,targetX),stroke=handVelocityForShot(ball.v,outgoing,false,ball.w);
   if(game.strike(1,1,{...stroke,p:ball.p.clone(),punch:false,angular:new Vector3()})){this.lastShot=time;this.returns++;}
  }
 }
-export function difficultyLabel(d:Difficulty){return d==='easy'?'Easy - slow feet, struggles with pace':d==='medium'?'Medium - rallies and solid returns':'Hard - fast anticipation, small openings';}
+export function difficultyLabel(d:Difficulty){return d==='rally'?'Rally - gentle returns to you':d==='easy'?'Easy - slow feet, struggles with pace':d==='medium'?'Medium - rallies and solid returns':'Hard - fast anticipation, small openings';}

@@ -1,5 +1,5 @@
 export type Mode='practice'|'cpu'|'online';
-export type Difficulty='easy'|'medium'|'hard';
+export type Difficulty='easy'|'medium'|'hard'|'rally';
 export const side=(z:number)=>z>=0?0:1;
 export class Match {
  mode:Mode='practice';difficulty:Difficulty='easy';score=[0,0];server=0;phase:'ready'|'toss'|'serve'|'rally'|'over'='ready';
@@ -33,8 +33,8 @@ export class Match {
   if(this.phase==='over')return false;
   if(this.mode==='practice'){this.rally++;this.best=Math.max(this.best,this.rally);return true;}
   if(!this.canReturn(seat)){this.point(1-seat,'Hit before your receiving bounce or hit twice');return false;}
-  this.lastHitter=seat;this.bounceSide=-1;this.bounces=this.ownBounces=0;this.crossed=false;this.phase='rally';this.rally++;this.message='Your floor once, then cross the line.';return true;
+  this.lastHitter=seat;this.bounceSide=-1;this.bounces=this.ownBounces=0;this.crossed=false;this.phase='rally';this.rally++;this.best=Math.max(this.best,this.rally);this.message='Your floor once, then cross the line.';return true;
  }
- point(winner:number,why:string){this.score[winner]++;this.server=winner;this.phase='ready';this.message=`${why}. ${winner===0?'Blue':'Red'} scores and serves.`;this.resetRally();
+ point(winner:number,why:string){if(this.mode==='cpu'&&this.difficulty==='rally'){this.best=Math.max(this.best,this.rally);this.server=0;this.phase='ready';this.message=`Rally ended: ${this.rally} returns. Grab and serve again.`;this.resetRally();return;}this.score[winner]++;this.server=winner;this.phase='ready';this.message=`${why}. ${winner===0?'Blue':'Red'} scores and serves.`;this.resetRally();
   if(this.score[winner]>=11&&this.score[winner]-this.score[1-winner]>=2){this.phase='over';this.winner=winner;this.message=`${winner===0?'Blue':'Red'} wins! Select a mode to play again.`;}}
 }

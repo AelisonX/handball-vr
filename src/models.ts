@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {COURT} from './ball';
 import {configureGlove} from './gloves';
 export const COLORS=['#397bb5','#bc554c'];
 const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.83});
@@ -18,15 +19,16 @@ export class Player {
  visible(value:boolean){this.root.visible=value;this.hands.forEach(h=>h.visible=value);}
 }
 export function buildCourt(scene:T.Scene){
- box(scene,'#bba67b',[0,-.08,0],[5.2,.16,8.2]);
- box(scene,'#e6e0d1',[-2.58,2.25,0],[.16,4.5,8.2]);box(scene,'#e6e0d1',[2.58,2.25,0],[.16,4.5,8.2]);
- for(const z of [-4.08,4.08])box(scene,'#ded9cb',[0,2.25,z],[5.2,4.5,.16]);
- box(scene,'#f4eedc',[0,.005,0],[5,.008,.055]);
- for(const z of [-3.95,3.95])box(scene,'#f4eedc',[0,.005,z],[5,.008,.04]);
- for(const x of [-2.45,2.45])box(scene,'#f4eedc',[x,.005,0],[.04,.008,8]);
- for(const [i,z] of [-2,2].entries()){box(scene,COLORS[1-i],[0,.007,z],[.1,.01,.5]);box(scene,COLORS[1-i],[0,.007,z],[.5,.01,.1]);}
- for(const x of [-2.48,2.48])for(const z of [-2,2])box(scene,z>0?COLORS[0]:COLORS[1],[x,1.1,z],[.02,.055,3.8]);
- box(scene,'#d4ccb6',[0,4.48,0],[5.2,.08,8.2]);for(const z of [-2.5,0,2.5])box(scene,'#fff2cb',[0,4.4,z],[2.8,.035,.16]);
+ const {halfWidth:w,halfLength:l,height:h}=COURT;
+ box(scene,'#bba67b',[0,-.08,0],[w*2+.2,.16,l*2+.2]);
+ for(const x of [-w-.08,w+.08])box(scene,'#e6e0d1',[x,h/2,0],[.16,h,l*2+.2]);
+ for(const z of [-l-.08,l+.08])box(scene,'#ded9cb',[0,h/2,z],[w*2+.2,h,.16]);
+ box(scene,'#f4eedc',[0,.005,0],[w*2,.008,.055]);
+ for(const z of [-l+.05,l-.05])box(scene,'#f4eedc',[0,.005,z],[w*2,.008,.04]);
+ for(const x of [-w+.05,w-.05])box(scene,'#f4eedc',[x,.005,0],[.04,.008,l*2]);
+ for(const [i,z] of [-l/2,l/2].entries()){box(scene,COLORS[1-i],[0,.007,z],[.1,.01,.5]);box(scene,COLORS[1-i],[0,.007,z],[.5,.01,.1]);}
+ for(const x of [-w+.02,w-.02])for(const z of [-l/2,l/2])box(scene,z>0?COLORS[0]:COLORS[1],[x,1.1,z],[.02,.055,l-.2]);
+ box(scene,'#d4ccb6',[0,h+.04,0],[w*2+.2,.08,l*2+.2]);for(const z of [-l*.65,0,l*.65])box(scene,'#fff2cb',[0,h-.06,z],[3.1,.035,.16]);
 }
 export function tennisBall(radius:number){const g=new T.Group(),body=new T.Mesh(new T.SphereGeometry(radius,32,24),mat('#93976b'));g.add(body);
  // Two curving ivory seams sit directly on the sphere and rotate with spin.

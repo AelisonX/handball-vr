@@ -1,9 +1,10 @@
 import {Vector3,Quaternion} from 'three';
 
-export const COURT={halfWidth:2.5,halfLength:4,height:4.5};
+export const COURT={halfWidth:2.9,halfLength:4.6,height:6.5};
 export const RADIUS=.115;
 export const GRAVITY=9.81;
 export const FLOOR_RESTITUTION=.94;
+export const HAND_TRANSFER={slap:1.08,punch:1.24};
 export type Surface='floor'|'wall';
 export class Ball {
  p=new Vector3(0,1.2,2);v=new Vector3();w=new Vector3();q=new Quaternion();
@@ -13,14 +14,14 @@ export class Ball {
  step(dt:number,contact:(surface:Surface)=>void){
   const steps=Math.max(1,Math.ceil(dt/(1/360))),h=dt/steps;
   for(let i=0;i<steps;i++){
-   const magnus=new Vector3().crossVectors(this.w,this.v).multiplyScalar(.0009).clampLength(0,1.5);
-   this.v.addScaledVector(magnus,h);this.v.y-=GRAVITY*h;this.v.multiplyScalar(Math.exp(-.003*this.v.length()*h));
+   const magnus=new Vector3().crossVectors(this.w,this.v).multiplyScalar(.012).clampLength(0,5);
+   this.v.addScaledVector(magnus,h);this.v.y-=GRAVITY*h;this.v.multiplyScalar(Math.exp(-.008*this.v.length()*h));
    this.p.addScaledVector(this.v,h);
    const bounce=(n:Vector3,depth:number,surface:Surface)=>{
     this.p.addScaledVector(n,depth);const speed=this.v.dot(n);if(speed>=0)return;
     const tangent=this.v.clone().addScaledVector(n,-speed).add(new Vector3().crossVectors(this.w,n.clone().multiplyScalar(-RADIUS)));
     const restitution=surface==='floor'?FLOOR_RESTITUTION:.88;
-    const impulse=tangent.multiplyScalar(-1/3.5).clampLength(0,(surface==='floor'?.10:.12)*(1+restitution)*-speed);
+    const impulse=tangent.multiplyScalar(-1/3.5).clampLength(0,(surface==='floor'?.24:.16)*(1+restitution)*-speed);
     this.v.addScaledVector(n,-(1+restitution)*speed).add(impulse);
     this.w.add(new Vector3().crossVectors(n.clone().multiplyScalar(-RADIUS),impulse).multiplyScalar(2.5/(RADIUS*RADIUS)));
     if(surface==='floor'&&-speed<.14){this.v.y=0;this.v.x*=.98;this.v.z*=.98;}
@@ -40,10 +41,10 @@ export class Ball {
   const wristBrush=new Vector3().crossVectors(angular.clone().clampLength(0,55),r.clone().multiplyScalar(-.65)).clampLength(0,3);
   const relative=velocity.clone().add(wristBrush).sub(this.v).sub(new Vector3().crossVectors(this.w,r)),closing=relative.dot(n);
   if(closing<=0)return false;
-  const impulse=n.clone().multiplyScalar(closing*(punch?2.05:1.70));
+  const impulse=n.clone().multiplyScalar(closing*(punch?HAND_TRANSFER.punch:HAND_TRANSFER.slap));
   const brush=relative.addScaledVector(n,-closing).multiplyScalar(punch?.20:.42).clampLength(0,impulse.length()*.48);
   impulse.add(brush);this.v.add(impulse);
   this.w.add(new Vector3().crossVectors(r,impulse).multiplyScalar(2.5/(RADIUS*RADIUS))).clampLength(0,110);
-  this.v.clampLength(0,22);return true;
+  this.v.clampLength(0,16);return true;
  }
 }

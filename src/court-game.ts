@@ -1,5 +1,5 @@
 import {Vector3} from 'three';
-import {Ball,type Surface} from './ball';
+import {Ball,COURT,type Surface} from './ball';
 import {Match,side,type Mode,type Difficulty} from './match';
 import type {HandStrike} from './hand-contact';
 
@@ -7,7 +7,7 @@ export class CourtGame {
  ball=new Ball();match=new Match();time=0;owner=-1;ownerHand=0;heldAt=0;pointAt=0;
  private lastContact=[[-10,-10],[-10,-10]];private lastHit=-10;private lastSeat=-1;
  private releaseAt=-10;private releaseSeat=-1;private releaseHand=-1;private idle=0;
- start(mode:Mode,difficulty:Difficulty='easy'){this.time=0;this.match.reset(mode,difficulty);this.ball.minZ=mode==='practice'?0:-4;this.ball.maxZ=4;this.lastContact=[[-10,-10],[-10,-10]];this.lastHit=-10;this.lastSeat=-1;this.resetBall();}
+ start(mode:Mode,difficulty:Difficulty='easy'){this.time=0;this.match.reset(mode,difficulty);this.ball.minZ=mode==='practice'?0:-COURT.halfLength;this.ball.maxZ=COURT.halfLength;this.lastContact=[[-10,-10],[-10,-10]];this.lastHit=-10;this.lastSeat=-1;this.resetBall();}
  resetBall(){this.owner=-1;this.ball.p.set(0,1.2,this.match.server===0?2.0:-2.0);this.ball.v.set(0,0,0);this.ball.w.set(0,0,0);this.ball.q.identity();this.pointAt=this.time;this.idle=0;}
  grab(seat:number,hand:number,p:Vector3){
   if(this.owner!==-1||p.distanceTo(this.ball.p)>.32||![0,1].includes(hand)||this.match.phase==='over')return false;
@@ -39,10 +39,10 @@ export class CourtGame {
   this.time+=dt;
   if(this.owner>=0){const p=handPoint(this.owner,this.ownerHand);if(p){this.ball.p.copy(p);this.ball.v.set(0,0,0);}else{this.owner=-1;this.match.toss(this.match.server);this.ball.v.set(0,0,0);}return;}
   if(['ready','over'].includes(this.match.phase))return;
-  const oldScore=this.match.score.join(',');
+  const oldScore=this.match.score.join(','),oldPhase=this.match.phase;
   this.ball.step(dt,s=>{this.match.crossing(this.ball.p.z);if(s==='floor')this.match.floor(this.ball.p.z);onContact(s);});
   this.match.crossing(this.ball.p.z);
-  if(this.match.score.join(',')!==oldScore){this.resetBall();return;}
+  if(this.match.score.join(',')!==oldScore||(['serve','rally'].includes(oldPhase)&&(['ready','over'] as string[]).includes(this.match.phase))){this.resetBall();return;}
   if(this.match.phase==='toss'&&this.match.mode!=='practice'&&side(this.ball.p.z)!==this.match.server){this.match.phase='ready';this.match.message='Keep the toss on your side, then hit to serve.';this.resetBall();return;}
   this.idle=this.ball.v.length()<.16?this.idle+dt:0;
   if(this.idle>1){if(this.match.phase==='toss'||this.match.mode==='practice'){this.match.phase='ready';this.match.message='Grab, toss or drop, then hit to serve.';}else this.match.point(1-side(this.ball.p.z),'Ball stopped');this.resetBall();}

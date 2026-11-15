@@ -4,7 +4,8 @@ import {Coop,mountLobby,type Pose} from './coop';
 import {Motion} from './interaction';
 import {xrHeadPose} from './poses';
 import {fingerCurl,menuDirection,configureGlove,GLOVE_TILT} from './gloves';
-import {RADIUS} from './ball';
+import {SpinTrail} from './spin-trail';
+import {RADIUS,COURT} from './ball';
 import {type Mode,type Difficulty,side} from './match';
 import {buildCourt,tennisBall,glove,Player,COLORS,box} from './models';
 import {CourtGame} from './court-game';
@@ -14,7 +15,7 @@ import {bounceShot,handVelocityForShot} from './shots';
 import {assistedDelta,playerIntercept,type MovementMode} from './locomotion';
 import './style.css';
 
-document.querySelector('#app')!.innerHTML=`<header><small>AELIS'ØN · THE COURTYARD · 01</small><h1>HANDBALL <span>VR</span></h1><p>Two halves. Four walls. One more rally.</p></header><div class="scoreboard"><div class="team blue">BLUE<b id="blue-score">00</b></div><span class="divider">/</span><div class="team red">RED<b id="red-score">00</b></div></div><div class="top-right"><button class="secondary" id="sound">Sound on</button><button class="secondary" id="pause">Pause</button><button class="secondary" id="menu">Menu</button></div><section class="panel"><div class="eyebrow">SMALL COURT. BIG PERSONALITY.</div><h2>Pick your game.</h2><div class="modes"><button id="practice">Wall practice <span>↗</span></button><div class="cpu-row"><select id="difficulty" aria-label="CPU difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select><button id="cpu">Play CPU</button></div><button class="secondary" id="online">Online versus · 2 players</button></div><p class="help"><b>PC</b> · WASD move · Mouse positions glove<br>Left click slap · Right click punch<br>Hold E to grab · Release E to throw · Space serve<br>Middle drag / arrows look · P pause · Esc menu<br><b>VR</b> · Move hands to strike · Trigger makes fist<br>Hold grip to grab · Toss/drop, then hit to serve<br>Choose stick / teleport / auto in menu · Left stick click teleports · A/X menu</p></section><div class="status" id="status"></div><div class="badge">WEBXR / DESKTOP · LOCAL PROTOTYPE 0.2</div></div>`;
+document.querySelector('#app')!.innerHTML=`<header><small>AELIS'ØN · THE COURTYARD · 01</small><h1>HANDBALL <span>VR</span></h1><p>Two halves. Four walls. One more rally.</p></header><div class="scoreboard"><div class="team blue">BLUE<b id="blue-score">00</b></div><span class="divider">/</span><div class="team red">RED<b id="red-score">00</b></div></div><div class="top-right"><button class="secondary" id="sound">Sound on</button><button class="secondary" id="pause">Pause</button><button class="secondary" id="menu">Menu</button></div><section class="panel"><div class="eyebrow">SMALL COURT. BIG PERSONALITY.</div><h2>Pick your game.</h2><div class="modes"><button id="practice">Wall practice <span>↗</span></button><div class="cpu-row"><select id="difficulty" aria-label="CPU difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="rally">Rally partner</option></select><button id="cpu">Play CPU</button></div><button class="secondary" id="online">Online versus · 2 players</button></div><p class="help"><b>PC</b> · WASD move · Mouse positions glove<br>Left click slap · Right click punch<br>Ctrl + click soft · Shift + click lob<br>Hold E to grab · Release E to throw · Space serve<br>Middle drag / arrows look · P pause · Esc menu<br><b>VR</b> · Move hands to strike · Trigger makes fist<br>Hold grip to grab · Toss/drop, then hit to serve<br>Choose stick / teleport / auto in menu · Left stick click teleports · A/X menu</p></section><div class="status" id="status"></div><div class="badge">WEBXR / DESKTOP · PLAYTEST 0.3</div></div>`;
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 document.querySelector('.panel')!.insertAdjacentHTML('beforeend','<label class="movement-setting">VR movement <select id="movement" aria-label="VR movement"><option value="stick">Stick movement</option><option value="teleport">Teleport to intercept</option><option value="auto">Auto move to ball</option></select></label>');
 export const scene=new T.Scene();scene.background=new T.Color('#263d43');scene.fog=new T.Fog('#b3b8a8',12,27);
@@ -23,9 +24,9 @@ export const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(inn
 export const rig=new T.Group();scene.add(rig);rig.add(camera);camera.position.set(0,1.65,0);
 scene.add(new T.HemisphereLight('#fff4df','#7b8b83',2.6));const light=new T.DirectionalLight('#fff4d4',2.5);light.position.set(-2,5,1);scene.add(light);buildCourt(scene);
 const vrButton=VRButton.createButton(renderer);document.body.append(vrButton);vrButton.style.right='24px';vrButton.style.left='auto';vrButton.style.bottom='58px';vrButton.style.width='150px';
-export const game=new CourtGame(),ball=game.ball,match=game.match,coop=new Coop();const mesh=tennisBall(RADIUS);scene.add(mesh);
+export const game=new CourtGame(),ball=game.ball,match=game.match,coop=new Coop();const mesh=tennisBall(RADIUS);scene.add(mesh);const spinTrail=new SpinTrail(scene);
 const practiceWall=new T.Group();practiceWall.name='practice-half-court-wall';scene.add(practiceWall);
-box(practiceWall,'#ded9cb',[0,2.25,-.08],[5.2,4.5,.16]);box(practiceWall,COLORS[0],[0,1.1,.012],[5,.05,.02]);
+box(practiceWall,'#ded9cb',[0,COURT.height/2,-.08],[COURT.halfWidth*2+.2,COURT.height,.16]);box(practiceWall,COLORS[0],[0,1.1,.012],[COURT.halfWidth*2,.05,.02]);
 const shadow=new T.Mesh(new T.CircleGeometry(RADIUS*1.1,24),new T.MeshBasicMaterial({color:'#34433b',transparent:true,opacity:.23,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.009;scene.add(shadow);
 const opponent=new Player(scene,COLORS[1]),localBody=new Player(scene,COLORS[0]);localBody.root.traverse(o=>o.layers.set(31));localBody.hands.forEach(h=>h.visible=false);
 const desktop=glove(COLORS[0]);scene.add(desktop);const desktopMotion=new Motion(12);
@@ -34,6 +35,8 @@ export const hands:Hand[]=[];let mode:Mode='practice',active=false,paused=false,
 let turnReady=true,desktopSwing=0,desktopPunch=false,movementMode:MovementMode='stick',assistTarget:T.Vector3|undefined,nextAssistAt=0;
 const cpuPlayer=new CpuPlayer(),previousBallForHands=new T.Vector3();
 const landingMarker=new T.Mesh(new T.RingGeometry(.17,.21,32),new T.MeshBasicMaterial({color:'#91c9fb',side:T.DoubleSide,transparent:true,opacity:.8}));landingMarker.rotation.x=-Math.PI/2;landingMarker.visible=false;scene.add(landingMarker);
+let rallyRecord=0;try{rallyRecord=Number(localStorage.getItem('handball-rally-best'))||0;}catch{}
+document.querySelector('.scoreboard')!.insertAdjacentHTML('beforeend','<small id="rally-record" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);width:220px;white-space:nowrap;text-align:center;font-size:12px;color:#eee8d7;background:#18333bbd;border-radius:6px;padding:5px;margin-top:5px"></small>');
 const keys=new Set<string>(),pointer=new T.Vector2(0,0),ray=new T.Raycaster();let lastMouse=new T.Vector2(),mouseVelocity=new T.Vector2(),lookDrag=false;
 const authority=()=>mode!=='online'||coop.host;
 function tone(freq=200,volume=.055,duration=.07){if(muted)return;audio??=new AudioContext();void audio.resume();const o=audio.createOscillator(),gain=audio.createGain();o.type='sine';o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.5,audio.currentTime+duration);gain.gain.setValueAtTime(volume,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(gain).connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}
@@ -54,7 +57,7 @@ function togglePause(){if(!active)return;if(mode==='online')coop.send('control',
 $('menu').onclick=menu;$('pause').onclick=togglePause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';};
 function setMovement(value:MovementMode){movementMode=value;$<HTMLSelectElement>('movement').value=value;assistTarget=undefined;nextAssistAt=0;hands.forEach(h=>{h.valid=false;h.motion.clear();});}
 $<HTMLSelectElement>('movement').onchange=()=>setMovement($<HTMLSelectElement>('movement').value as MovementMode);
-function updateUI(){for(const [i,id]of ['blue-score','red-score'].entries())$(id).textContent=String(match.score[i]).padStart(2,'0');$('status').textContent=!active?'Schoolyard handball. Walls stay in play. Choose a mode.':paused?'Paused · P / A / X to resume.':match.message;$('pause').textContent=paused?'Resume':'Pause';}
+function updateUI(){if(mode==='cpu'&&match.difficulty==='rally'&&match.best>rallyRecord){rallyRecord=match.best;try{localStorage.setItem('handball-rally-best',String(rallyRecord));}catch{}}$('rally-record').textContent=mode==='cpu'&&match.difficulty==='rally'?`Rally ${match.rally} · personal best ${rallyRecord}`:rallyRecord?`Rally best ${rallyRecord}`:'';for(const [i,id]of ['blue-score','red-score'].entries())$(id).textContent=String(match.score[i]).padStart(2,'0');$('status').textContent=!active?'Schoolyard handball. Walls stay in play. Choose a mode.':paused?'Paused · P / A / X to resume.':match.message;$('pause').textContent=paused?'Resume':'Pause';}
 function state(){return {beans:[],ball:{p:ball.p.toArray(),v:ball.v.toArray(),w:ball.w.toArray(),q:ball.q.toArray()},match:{...match},owner:game.owner,ownerHand:game.ownerHand,time:game.time,paused};}
 function receiveState(s:any){if(!s?.ball||!Array.isArray(s.ball.p)||s.ball.p.length!==3||!s.ball.p.every(Number.isFinite))return;ball.p.fromArray(s.ball.p);ball.v.fromArray(s.ball.v);ball.w.fromArray(s.ball.w);ball.q.fromArray(s.ball.q);Object.assign(match,s.match);game.owner=s.owner;game.ownerHand=s.ownerHand;game.time=s.time??game.time;paused=s.paused;lastPacket=performance.now();}
 coop.onPacket=m=>{if(m.type==='start')begin('online');else if(m.type==='snapshot'&&!coop.host)receiveState(m.state);else if(m.type==='action'&&coop.host&&m.action==='ball')handleAction(m.slot,m);else if(m.type==='control'){if(m.action==='pause')paused=true;if(m.action==='resume'&&coop.peerReady&&coop.count===2){paused=false;document.body.classList.add('playing');}vrMenu.visible=paused;updateUI();}};
@@ -74,10 +77,12 @@ function handleAction(slot:number,m:any){
  }
 }
 function autoServe(slot:number){if(game.autoServe(slot))tone(300);}
-function desktopTarget(){ray.setFromCamera(pointer,camera);const sign=seat===0?1:-1,z=mode==='practice'?T.MathUtils.clamp(ball.p.z,-3.7,3.7):sign*T.MathUtils.clamp(Math.abs(ball.p.z),.3,3.7),plane=new T.Plane(new T.Vector3(0,0,1),-z),point=ray.ray.intersectPlane(plane,new T.Vector3());
- if(point){const base=head().position,delta=point.clone().sub(base).clampLength(0,2.1);point.copy(base).add(delta);point.x=T.MathUtils.clamp(point.x,-2.35,2.35);point.y=T.MathUtils.clamp(point.y,.15,2.6);point.z=sign*T.MathUtils.clamp(point.z*sign,.2,3.8);return point;}return new T.Vector3(0,1,sign*1.5);}
+function desktopTarget(){ray.setFromCamera(pointer,camera);const sign=seat===0?1:-1,z=mode==='practice'?T.MathUtils.clamp(ball.p.z,-COURT.halfLength+.3,COURT.halfLength-.3):sign*T.MathUtils.clamp(Math.abs(ball.p.z),.3,COURT.halfLength-.3),plane=new T.Plane(new T.Vector3(0,0,1),-z),point=ray.ray.intersectPlane(plane,new T.Vector3());
+ if(point){const base=head().position,delta=point.clone().sub(base).clampLength(0,2.1);point.copy(base).add(delta);point.x=T.MathUtils.clamp(point.x,-COURT.halfWidth+.15,COURT.halfWidth-.15);point.y=T.MathUtils.clamp(point.y,.15,2.6);point.z=sign*T.MathUtils.clamp(point.z*sign,.2,COURT.halfLength-.2);return point;}return new T.Vector3(0,1,sign*1.5);}
 function mouseHit(punch:boolean){if(!active||paused||renderer.xr.isPresenting)return;
- const goal=bounceShot(ball.p,seat,punch?9.5:6,pointer.x*1.9),stroke=handVelocityForShot(ball.v,goal,punch,ball.w);
+ const lob=keys.has('shift'),soft=keys.has('control');
+ const goal=bounceShot(ball.p,seat,soft?2.3:lob?3.8:punch?6.2:3.8,pointer.x*2.2);if(lob)goal.y=-6.8;
+ const stroke=handVelocityForShot(ball.v,goal,punch,ball.w);
  stroke.offset.add(new T.Vector3(T.MathUtils.clamp(mouseVelocity.x*.0005,-.07,.07),T.MathUtils.clamp(-mouseVelocity.y*.0005,-.07,.07),0)).clampLength(0,RADIUS);
  action('hit',{v:stroke.v.toArray(),n:stroke.n.toArray(),offset:stroke.offset.toArray(),punch});desktopSwing=.16;desktopPunch=punch;}
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());renderer.domElement.addEventListener('mousedown',e=>{tone(80,.001,.01);if(e.button===1){lookDrag=true;e.preventDefault();}else if(e.button===0||e.button===2)mouseHit(e.button===2);});
@@ -100,24 +105,24 @@ for(let i=0;i<2;i++){
 renderer.xr.addEventListener('sessionstart',()=>{keys.clear();hands.forEach(h=>{h.valid=false;h.motion.clear();});vrMenu.visible=!active||paused;});
 renderer.xr.addEventListener('sessionend',()=>{if(game.owner===seat)action('release',{v:[0,0,0]},game.ownerHand);hands.forEach(h=>{h.valid=false;h.motion.clear();});camera.position.set(0,1.65,0);camera.rotation.set(pitch,0,0);vrMenu.visible=false;});
 // A browser keyboard is still used for room names before entering VR, as in Bean There.
-const menuCanvas=document.createElement('canvas');menuCanvas.width=768;menuCanvas.height=1024;const ctx=menuCanvas.getContext('2d')!,menuTexture=new T.CanvasTexture(menuCanvas);
-const vrMenu=new T.Mesh(new T.PlaneGeometry(.95,1.27),new T.MeshBasicMaterial({map:menuTexture,side:T.DoubleSide}));rig.add(vrMenu);vrMenu.position.set(0,1.4,-.95);vrMenu.visible=false;
+const menuCanvas=document.createElement('canvas');menuCanvas.width=768;menuCanvas.height=1124;const ctx=menuCanvas.getContext('2d')!,menuTexture=new T.CanvasTexture(menuCanvas);
+const vrMenu=new T.Mesh(new T.PlaneGeometry(.95,1.39),new T.MeshBasicMaterial({map:menuTexture,side:T.DoubleSide}));rig.add(vrMenu);vrMenu.position.set(0,1.4,-.95);vrMenu.visible=false;
 const boardCanvas=document.createElement('canvas');boardCanvas.width=1024;boardCanvas.height=256;const boardTexture=new T.CanvasTexture(boardCanvas),boardContext=boardCanvas.getContext('2d')!;
-for(const z of [-3.99,3.99]){const board=new T.Mesh(new T.PlaneGeometry(3.2,.8),new T.MeshBasicMaterial({map:boardTexture}));board.position.set(0,2.65,z);if(z>0)board.rotation.y=Math.PI;scene.add(board);}
+for(const z of [-COURT.halfLength+.01,COURT.halfLength-.01]){const board=new T.Mesh(new T.PlaneGeometry(3.2,.8),new T.MeshBasicMaterial({map:boardTexture}));board.position.set(0,2.65,z);if(z>0)board.rotation.y=Math.PI;scene.add(board);}
 const practiceBoard=new T.Mesh(new T.PlaneGeometry(3.2,.8),new T.MeshBasicMaterial({map:boardTexture}));practiceBoard.position.set(0,2.65,.016);practiceBoard.name='practice-wall-scoreboard';scene.add(practiceBoard);
-function drawPanels(){boardContext.fillStyle='#18333b';boardContext.fillRect(0,0,1024,256);boardContext.textAlign='center';boardContext.fillStyle='#e9e3d2';boardContext.font='bold 70px sans-serif';boardContext.fillText(`BLUE  ${match.score[0]}   /   ${match.score[1]}  RED`,512,95);boardContext.font='26px sans-serif';boardContext.fillText(paused?'PAUSED':match.message,512,162);boardContext.font='20px sans-serif';boardContext.fillStyle='#b5c488';boardContext.fillText(mode==='practice'?`WALL PRACTICE · BEST ${match.best}`:'FIRST TO 11 · WIN BY TWO · WALLS STAY IN PLAY',512,215);boardTexture.needsUpdate=true;
- ctx.fillStyle='#18333b';ctx.fillRect(0,0,768,1024);ctx.textAlign='center';ctx.fillStyle='#eee8d7';ctx.font='bold 50px sans-serif';ctx.fillText('HANDBALL VR 0.2',384,85);
+function drawPanels(){boardContext.fillStyle='#18333b';boardContext.fillRect(0,0,1024,256);boardContext.textAlign='center';boardContext.fillStyle='#e9e3d2';boardContext.font='bold 70px sans-serif';boardContext.fillText(`BLUE  ${match.score[0]}   /   ${match.score[1]}  RED`,512,95);boardContext.font='26px sans-serif';boardContext.fillText(paused?'PAUSED':match.message,512,162);boardContext.font='20px sans-serif';boardContext.fillStyle='#b5c488';boardContext.fillText(mode==='practice'?`WALL PRACTICE · BEST ${match.best}`:mode==='cpu'&&match.difficulty==='rally'?`RALLY ${match.rally} · PERSONAL BEST ${rallyRecord}`:'FIRST TO 11 · WIN BY TWO · WALLS STAY IN PLAY',512,215);boardTexture.needsUpdate=true;
+ ctx.fillStyle='#18333b';ctx.fillRect(0,0,768,1124);ctx.textAlign='center';ctx.fillStyle='#eee8d7';ctx.font='bold 50px sans-serif';ctx.fillText('HANDBALL VR 0.3',384,85);
  const movement=movementMode==='stick'?'STICK':movementMode==='teleport'?'TELEPORT':'AUTO MOVE';
- const labels=[active?'RESUME':'START PRACTICE','HALF-COURT WALL PRACTICE','CPU - EASY','CPU - MEDIUM','CPU - HARD','RESET SERVE BALL',`MOVEMENT: ${movement}`,mode==='online'&&coop.joined?'ONLINE - RESTART MATCH':'ONLINE - ROOM SETUP'];
+ const labels=[active?'RESUME':'START PRACTICE','HALF-COURT WALL PRACTICE','CPU - EASY','CPU - MEDIUM','CPU - HARD','CPU - RALLY PARTNER','RESET SERVE BALL',`MOVEMENT: ${movement}`,mode==='online'&&coop.joined?'ONLINE - RESTART MATCH':'ONLINE - ROOM SETUP'];
  labels.forEach((label,i)=>{ctx.fillStyle=i===0?'#c6d286':'#2b4b53';ctx.fillRect(60,130+i*100,648,86);ctx.fillStyle=i===0?'#18333b':'#eee8d7';ctx.font='bold 26px sans-serif';ctx.fillText(label,384,182+i*100);});
- ctx.fillStyle='#b8c8bd';ctx.font='20px sans-serif';ctx.fillText('Teleport: click left stick. Serve: grab, toss, hit.',384,985);menuTexture.needsUpdate=true;
+ ctx.fillStyle='#b8c8bd';ctx.font='20px sans-serif';ctx.fillText('Teleport: click left stick. Serve: grab, toss, hit.',384,1085);menuTexture.needsUpdate=true;
 }
-function selectVR(h:Hand){const origin=h.input.getWorldPosition(new T.Vector3());ray.set(origin,menuDirection(h.input));const hit=ray.intersectObject(vrMenu)[0];if(!hit?.uv)return;const y=(1-hit.uv.y)*1024-130,row=Math.floor(y/100);if(row<0||row>7||y%100>86)return;
+function selectVR(h:Hand){const origin=h.input.getWorldPosition(new T.Vector3());ray.set(origin,menuDirection(h.input));const hit=ray.intersectObject(vrMenu)[0];if(!hit?.uv)return;const y=(1-hit.uv.y)*1124-130,row=Math.floor(y/100);if(row<0||row>8||y%100>86)return;
  if(row===0){if(active)togglePause();else begin('practice');}
  else if(row===1){if(!coop.joined)begin('practice');}
- else if(row>=2&&row<=4){if(coop.joined){match.message='Leave the online room in your browser before starting CPU.';return;}begin('cpu',(['easy','medium','hard'] as Difficulty[])[row-2]);}
- else if(row===5){if(paused)togglePause();action('serve',{},hands.indexOf(h));}
- else if(row===6){const values:MovementMode[]=['stick','teleport','auto'];setMovement(values[(values.indexOf(movementMode)+1)%3]);}
+ else if(row>=2&&row<=5){if(coop.joined){match.message='Leave the online room in your browser before starting CPU.';return;}begin('cpu',(['easy','medium','hard','rally'] as Difficulty[])[row-2]);}
+ else if(row===6){if(paused)togglePause();action('serve',{},hands.indexOf(h));}
+ else if(row===7){const values:MovementMode[]=['stick','teleport','auto'];setMovement(values[(values.indexOf(movementMode)+1)%3]);}
  else if(mode==='online'&&coop.joined&&coop.host)void coop.request('start');else{void renderer.xr.getSession()?.end();lobby.hidden=false;}
  vrMenu.visible=paused||!active;}
 
@@ -136,7 +141,7 @@ function moveVR(dt:number){
   const right=hands.find(h=>h.tracked&&h.source?.handedness==='right'),turn=right?.source?.gamepad?.axes[2]??0;
   if(Math.abs(turn)>.7&&turnReady){rig.rotation.y-=Math.sign(turn)*Math.PI/6;turnReady=false;discontinuous=true;}else if(Math.abs(turn)<.3)turnReady=true;
  }else landingMarker.visible=false;
- rig.position.x=T.MathUtils.clamp(rig.position.x,-2.12,2.12);rig.position.z=seat===0?T.MathUtils.clamp(rig.position.z,.35,3.5):T.MathUtils.clamp(rig.position.z,-3.5,-.35);
+ rig.position.x=T.MathUtils.clamp(rig.position.x,-COURT.halfWidth+.38,COURT.halfWidth-.38);rig.position.z=seat===0?T.MathUtils.clamp(rig.position.z,.35,COURT.halfLength-.5):T.MathUtils.clamp(rig.position.z,-COURT.halfLength+.5,-.35);
  const delta=rig.position.clone().sub(before);
  for(const h of hands){if(discontinuous){h.valid=false;h.motion.clear();}else{h.previous.add(delta);for(const sample of h.motion.samples)sample.p.add(delta);}}
 }
@@ -159,7 +164,7 @@ function updateInput(dt:number){
    h.previous.copy(p);h.previousRotation.copy(rotation);h.valid=true;
   }
  }
- rig.position.x=T.MathUtils.clamp(rig.position.x,-2.12,2.12);rig.position.z=seat===0?T.MathUtils.clamp(rig.position.z,.35,3.5):T.MathUtils.clamp(rig.position.z,-3.5,-.35);
+ rig.position.x=T.MathUtils.clamp(rig.position.x,-COURT.halfWidth+.38,COURT.halfWidth-.38);rig.position.z=seat===0?T.MathUtils.clamp(rig.position.z,.35,COURT.halfLength-.5):T.MathUtils.clamp(rig.position.z,-COURT.halfLength+.5,-.35);
  const hp=head();localBody.root.position.set(hp.position.x,0,hp.position.z);localBody.root.rotation.y=new T.Euler().setFromQuaternion(hp.rotation,'YXZ').y;localBody.hands.forEach(h=>h.visible=false);
 }
 function cpu(dt:number){
@@ -181,6 +186,7 @@ renderer.setAnimationLoop(()=>{const now=performance.now(),dt=Math.min(.05,(now-
  previousBallForHands.copy(ball.p);
  if(authority()){accumulator+=dt;while(accumulator>=1/180){simulate(1/180);accumulator-=1/180;}}else if(active&&!paused){game.time+=dt;if(now-lastPacket>3000&&coop.running){paused=true;match.message='Waiting for host updates.';}}
  if(mode==='online'&&coop.peerReady&&now-sendAt>33){sendAt=now;coop.send('pose',{pose:pose()});if(coop.host)coop.send('snapshot',{state:state()});}
+ spinTrail.update(ball.p,ball.v,ball.w,now/1000,active&&!paused&&game.owner<0&&!['ready','over'].includes(match.phase));
  remoteAvatar(dt);mesh.position.copy(ball.p);mesh.quaternion.copy(ball.q);shadow.position.set(ball.p.x,.009,ball.p.z);shadow.scale.setScalar(1+ball.p.y*.15);(shadow.material as T.MeshBasicMaterial).opacity=.28/(1+ball.p.y*.9);
  if(now-uiAt>120){uiAt=now;updateUI();drawPanels();}renderer.render(scene,camera);
 });

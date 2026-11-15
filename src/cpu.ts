@@ -47,7 +47,7 @@ export class CpuPlayer {
   if(time-this.legalSince<cfg.afterBounce+fastLag||time-this.lastShot<.12||ball.p.y<.25||ball.p.y>1.65||ball.p.y<.65&&ball.v.y>0)return;
   const distance=Math.hypot(ball.p.x-this.position.x,ball.p.z-(this.position.z+.22));if(distance>cfg.reach)return;
   const targetX=match.difficulty==='easy'?Math.sin(time)*.5:match.difficulty==='medium'?Math.sin(match.rally*1.7)*.9:playerPosition.x>=0?-1.95:1.95;
-  const outgoing=match.difficulty==='rally'?friendlyShot(ball,playerPosition):legalReturn(ball,1,cfg.shotSpeed,targetX),stroke=handVelocityForShot(ball.v,outgoing,false,ball.w);
+  const outgoing=match.difficulty==='rally'?friendlyShot(ball,playerPosition):legalReturn(ball,1,cfg.shotSpeed,targetX),stroke=handVelocityForShot(ball.v,outgoing,false,ball.w,ball.physics);
   if(game.strike(1,1,{...stroke,p:ball.p.clone(),punch:false,angular:new Vector3()})){this.lastShot=time;this.returns++;}
  }
 }

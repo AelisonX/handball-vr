@@ -1,26 +1,28 @@
+import {PHYSICS_DEFAULTS,type PhysicsOptions} from './physics-options';
 import {Vector3,Quaternion} from 'three';
 
 export const COURT={halfWidth:2.9,halfLength:4.6,height:6.5};
 export const RADIUS=.115;
 export const GRAVITY=9.81;
-export const FLOOR_RESTITUTION=.94;
+export const FLOOR_RESTITUTION=PHYSICS_DEFAULTS.bounce;
 export const HAND_TRANSFER={slap:1.08,punch:1.24};
 export type Surface='floor'|'wall';
 export class Ball {
  p=new Vector3(0,1.2,2);v=new Vector3();w=new Vector3();q=new Quaternion();
+ physics:PhysicsOptions={...PHYSICS_DEFAULTS};
  minZ=-COURT.halfLength;maxZ=COURT.halfLength;
- clone(){const b=new Ball();b.p.copy(this.p);b.v.copy(this.v);b.w.copy(this.w);b.q.copy(this.q);b.minZ=this.minZ;b.maxZ=this.maxZ;return b;}
+ clone(){const b=new Ball();b.p.copy(this.p);b.v.copy(this.v);b.w.copy(this.w);b.q.copy(this.q);b.physics={...this.physics};b.minZ=this.minZ;b.maxZ=this.maxZ;return b;}
  // Hollow rubber/felt ball: approximate restitution, Coulomb friction and Magnus lift.
  step(dt:number,contact:(surface:Surface)=>void){
   const steps=Math.max(1,Math.ceil(dt/(1/360))),h=dt/steps;
   for(let i=0;i<steps;i++){
-   const magnus=new Vector3().crossVectors(this.w,this.v).multiplyScalar(.012).clampLength(0,5);
-   this.v.addScaledVector(magnus,h);this.v.y-=GRAVITY*h;this.v.multiplyScalar(Math.exp(-.008*this.v.length()*h));
+   const magnus=new Vector3().crossVectors(this.w,this.v).multiplyScalar(.012*this.physics.spin).clampLength(0,5);
+   this.v.addScaledVector(magnus,h);this.v.y-=this.physics.gravity*h;this.v.multiplyScalar(Math.exp(-this.physics.airDrag*this.v.length()*h));
    this.p.addScaledVector(this.v,h);
    const bounce=(n:Vector3,depth:number,surface:Surface)=>{
     this.p.addScaledVector(n,depth);const speed=this.v.dot(n);if(speed>=0)return;
     const tangent=this.v.clone().addScaledVector(n,-speed).add(new Vector3().crossVectors(this.w,n.clone().multiplyScalar(-RADIUS)));
-    const restitution=surface==='floor'?FLOOR_RESTITUTION:.88;
+    const restitution=surface==='floor'?this.physics.bounce:Math.min(.88,this.physics.bounce);
     const impulse=tangent.multiplyScalar(-1/3.5).clampLength(0,(surface==='floor'?.24:.16)*(1+restitution)*-speed);
     this.v.addScaledVector(n,-(1+restitution)*speed).add(impulse);
     this.w.add(new Vector3().crossVectors(n.clone().multiplyScalar(-RADIUS),impulse).multiplyScalar(2.5/(RADIUS*RADIUS)));
@@ -41,7 +43,7 @@ export class Ball {
   const wristBrush=new Vector3().crossVectors(angular.clone().clampLength(0,55),r.clone().multiplyScalar(-.65)).clampLength(0,3);
   const relative=velocity.clone().add(wristBrush).sub(this.v).sub(new Vector3().crossVectors(this.w,r)),closing=relative.dot(n);
   if(closing<=0)return false;
-  const impulse=n.clone().multiplyScalar(closing*(punch?HAND_TRANSFER.punch:HAND_TRANSFER.slap));
+  const impulse=n.clone().multiplyScalar(closing*(punch?HAND_TRANSFER.punch:HAND_TRANSFER.slap)*this.physics.hitPower);
   const brush=relative.addScaledVector(n,-closing).multiplyScalar(punch?.20:.42).clampLength(0,impulse.length()*.48);
   impulse.add(brush);this.v.add(impulse);
   this.w.add(new Vector3().crossVectors(r,impulse).multiplyScalar(2.5/(RADIUS*RADIUS))).clampLength(0,110);

@@ -3,15 +3,18 @@ export type Difficulty='easy'|'medium'|'hard'|'rally';
 export const side=(z:number)=>z>=0?0:1;
 export class Match {
  mode:Mode='practice';difficulty:Difficulty='easy';score=[0,0];server=0;phase:'ready'|'toss'|'serve'|'rally'|'over'='ready';
+ onlinePractice=false;
+ get freePlay(){return this.mode==='practice'||this.mode==='online'&&this.onlinePractice;}
+ get practiceMode(){return this.freePlay||this.mode==='cpu'&&this.difficulty==='rally';}
  lastHitter=0;bounceSide=-1;bounces=0;ownBounces=0;crossed=false;message='Choose a mode. First to 11, win by two.';rally=0;best=0;winner=-1;
  reset(mode:Mode,difficulty:Difficulty=this.difficulty){this.mode=mode;this.difficulty=difficulty;this.score=[0,0];this.server=0;this.phase='ready';this.rally=this.best=0;this.winner=-1;this.message='Blue serves. Grab, toss or drop, then hit.';this.resetRally();}
  resetRally(){this.lastHitter=this.server;this.bounces=0;this.bounceSide=-1;this.ownBounces=0;this.crossed=false;this.rally=0;}
  toss(seat:number){if(!['ready','toss'].includes(this.phase)||seat!==this.server)return false;this.phase='toss';this.message='Hit the tossed ball to start your serve.';return true;}
  serve(seat:number){if(!['ready','toss'].includes(this.phase)||seat!==this.server)return false;this.resetRally();this.phase='serve';this.message='Hit your floor once, then cross the line.';return true;}
- canReturn(seat:number){return ['serve','rally'].includes(this.phase)&&this.crossed&&seat!==this.lastHitter&&this.bounceSide===seat&&this.bounces===1;}
+ canReturn(seat:number){if(this.freePlay)return ['serve','rally'].includes(this.phase);return ['serve','rally'].includes(this.phase)&&this.crossed&&seat!==this.lastHitter&&this.bounceSide===seat&&this.bounces===1;}
  floor(z:number){
   if(!['serve','rally'].includes(this.phase))return;
-  if(this.mode==='practice'){this.message=`Wall practice · ${this.rally} returns · best ${this.best}`;return;}
+  if(this.freePlay){this.message=`Wall practice · ${this.rally} returns · best ${this.best}`;return;}
   const s=side(z);
   if(!this.crossed&&s!==this.lastHitter)this.crossing(z);
   if(this.phase==='ready'||this.phase==='over')return;
@@ -26,7 +29,7 @@ export class Match {
   if(this.bounces>=2)this.point(this.lastHitter,'Two floor bounces before the return');
   else this.message='Return now: your floor once, then across.';
  }
- crossing(z:number){if(this.mode==='practice'||!['serve','rally'].includes(this.phase))return;
+ crossing(z:number){if(this.freePlay||!['serve','rally'].includes(this.phase))return;
   if(!this.crossed&&side(z)!==this.lastHitter){if(this.ownBounces!==1)this.point(1-this.lastHitter,'Crossed the line without an own-side bounce');else{this.crossed=true;this.bounceSide=-1;this.bounces=0;}}}
  hit(seat:number){
   if(['ready','toss'].includes(this.phase))return this.serve(seat);
@@ -35,6 +38,6 @@ export class Match {
   if(!this.canReturn(seat)){this.point(1-seat,'Hit before your receiving bounce or hit twice');return false;}
   this.lastHitter=seat;this.bounceSide=-1;this.bounces=this.ownBounces=0;this.crossed=false;this.phase='rally';this.rally++;this.best=Math.max(this.best,this.rally);this.message='Your floor once, then cross the line.';return true;
  }
- point(winner:number,why:string){if(this.mode==='cpu'&&this.difficulty==='rally'){this.best=Math.max(this.best,this.rally);this.server=0;this.phase='ready';this.message=`Rally ended: ${this.rally} returns. Grab and serve again.`;this.resetRally();return;}this.score[winner]++;this.server=winner;this.phase='ready';this.message=`${why}. ${winner===0?'Blue':'Red'} scores and serves.`;this.resetRally();
+ point(winner:number,why:string){if(this.phase==='serve'){this.phase='ready';this.message='Serve retry: '+why+'. No point lost. Grab and serve again.';this.resetRally();return;}if(this.freePlay){return;}if(this.mode==='cpu'&&this.difficulty==='rally'){this.best=Math.max(this.best,this.rally);this.server=0;this.phase='ready';this.message=`Rally ended: ${this.rally} returns. Grab and serve again.`;this.resetRally();return;}this.score[winner]++;this.server=winner;this.phase='ready';this.message=`${why}. ${winner===0?'Blue':'Red'} scores and serves.`;this.resetRally();
   if(this.score[winner]>=11&&this.score[winner]-this.score[1-winner]>=2){this.phase='over';this.winner=winner;this.message=`${winner===0?'Blue':'Red'} wins! Select a mode to play again.`;}}
 }

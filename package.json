@@ -1,6 +1,6 @@
 {
   "name": "handball-vr",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "tsx --test --test-force-exit tests/*.test.ts",
     "server": "node server/relay.mjs",
     "test:browser": "node tests/browser.mjs",
-    "test:unit": "tsx --test tests/handball.test.ts tests/revision2.test.ts tests/interaction.test.ts tests/peer-world.test.ts tests/ice.test.ts",
+    "test:unit": "tsx --test tests/handball.test.ts tests/revision2.test.ts tests/interaction.test.ts tests/peer-world.test.ts tests/ice.test.ts tests/revision3.test.ts",
     "desktop": "npm run build && node scripts/standalone.mjs",
     "test:online": "node tests/online.mjs",
     "test:ai": "node --import tsx tests/ai-simulation.mjs",

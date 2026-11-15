@@ -1,20 +1,31 @@
 # Handball VR - The Courtyard
 
-v0.2.0 Quest and desktop playtest. Separate project built from selected Bean There VR systems. Bean There VR files and services are untouched.
+v0.3.0 Quest and desktop playtest. Separate project built from selected Bean There VR systems. Bean There VR files and services are untouched.
 
 ## Play locally
 
 Open `handball-desktop.html`, or double-click `START-PC.cmd`. No server is required for PC practice and CPU play. For a full project checkout: `npm ci`, then `npm run dev -- --port 5176 --strictPort`.
 
-## v0.2 rules and physics
+## v0.3 playtest changes
+
+- Hand impulse reduced: a 3 m/s central open-hand swing launches a stationary ball at about 3.24 m/s. Faster swings and fists still hit harder; no post-bounce power assist.
+- Stronger bounded Magnus curvature and surface friction give topspin dip/kick, backspin lift/check, and sidespin curve/deflection. Subtle trails: blue topspin, red backspin, green sidespin, white weak/no spin. Mixed spin uses its dominant component relative to flight.
+- Arena is 5.8 x 9.2 m with a 6.5 m ceiling. Half-court practice remains 5.8 x 4.6 m.
+- Hard has slower feet/reactions, larger placement errors and gentler shots. Current 81-shot simulation: Easy 24, Medium 52, Hard 63 legal returns.
+- Select Rally partner under CPU difficulty, or CPU - Rally partner in VR. It predicts reachable shots and plans gentle, central-contact returns toward your current position through the real ball solver. It adds no spin, but incoming spin remains physical. Unreachable shots can still end a rally; the CPU does not teleport or move the ball. No points or game-over in this mode. Current rally and personal best appear subtly below the score and on arena boards; the record is saved on that browser/device when storage is available.
+- Desktop Ctrl + click plays a soft shot; Shift + click plays a high-bounce lob. VR shot height/pace/spin come from the actual hand motion and contact.
+
+69 automated checks, the AI shot simulation and production build pass. Physical Quest feel and cross-device co-op still need user testing.
+
+## Rules and physics
 
 Every serve and return must bounce exactly once on the hitter's own floor before crossing the centre line. Crossing without that bounce, or bouncing twice on the hitter's side, loses the point. The receiver must return after one receiving bounce and before the second. Wall contacts do not count as floor bounces. First to 11, win by two; the point winner serves.
 
 VR serving is physical: grab with either grip, toss up or drop, then strike with either open hand or fist. Release alone is a toss and does not start the serve or score a point. A toss can be caught and repositioned. In a scored rally, catch-and-throw is a fault; use strikes. Practice permits re-grabs without penalties. Desktop Space remains a starter serve; E also supports grab, drop and click-to-hit.
 
-Hand impacts are stronger immediately, before any ground contact. Floor rebound is increased and air drag reduced, with gravity left at 9.81 m/s2. Normal drop/serve tests reach approximately waist/chest height after a bounce. Open palms transfer more brushing/spin control; fists give a stronger normal impulse. Contact uses linear speed, palm orientation, wrist rotation and position on the ball, including off-centre topspin, backspin and sidespin. Relative swept contact handles fast ball/hand motion between frames. Simultaneous left/right contacts form one legal hit while allowing both physical impulses.
+Hand impacts respond immediately, before any ground contact, with a gentler v0.3 transfer. Floor rebound is increased and air drag reduced, with gravity left at 9.81 m/s2. Normal drop/serve tests reach approximately waist/chest height after a bounce. v0.3 reduces the earlier immediate hand boost while preserving that rebound. Open palms transfer more brushing/spin control; fists give a stronger normal impulse. Contact uses linear speed, palm orientation, wrist rotation and position on the ball, including off-centre topspin, backspin and sidespin. Relative swept contact handles fast ball/hand motion between frames. Simultaneous left/right contacts form one legal hit while allowing both physical impulses.
 
-Practice is now a 5 x 4 m half-court, using the existing side/end walls and a solid wall at the centre line. Both visual and ball collision boundaries stop at that wall. CPU/online matches retain the full 5 x 8 m court.
+Practice is now a 5.8 x 4.6 m half-court, using the existing side/end walls and a solid wall at the centre line. Both visual and ball collision boundaries stop at that wall. CPU/online matches retain the full 5.8 x 9.2 m court.
 
 ## Controls
 
@@ -40,7 +51,7 @@ Position prediction keeps you in your half and accounts for a room-scale head of
 
 Easy has slow feet, delayed tracking, larger placement errors and difficulty with fast shots. Medium uses normal movement speed, a shorter prediction window and reliable returns for rallies. Hard moves slightly faster, predicts reachable future contacts, makes fewer errors and tolerates more pace. Hard never teleports and can still lose from a bad position or an unreachable shot.
 
-The same deterministic 81-shot simulation includes pace, side-wall angles and varied CPU starting positions: Easy made 16 legal returns, Medium 62, Hard 75. These are test-set results, not a promised player win rate. Hard returned 25/27 shots from the central start in that set. CPU strokes use the same physical ball impulse solver and the same bounce rules.
+The same deterministic 81-shot simulation includes pace, side-wall angles and varied CPU starting positions: Easy made 24 legal returns, Medium 52, Hard 63. These are test-set results, not a promised player win rate. Hard returned 21/27 shots from the central start in that set. CPU strokes use the same physical ball impulse solver and the same bounce rules.
 
 ## Verification
 
@@ -52,7 +63,7 @@ npm run desktop
 npm run test:browser:offline
 ```
 
-60 automated checks pass. Coverage includes all left/right toss/strike combinations with open/fist contacts, toss recovery, immediate hit strength, rebound height, repeated own-bounce/crossing rules, swept contacts, opposite spin directions, wrist/palm effects, half-court collisions, bounded assist movement, finite network data and physically unreachable hard-CPU shots. The 81-shot AI simulation and production TypeScript/Vite build pass.
+69 automated checks pass. Coverage includes all left/right toss/strike combinations with open/fist contacts, toss recovery, immediate hit strength, rebound height, repeated own-bounce/crossing rules, swept contacts, opposite spin directions, wrist/palm effects, half-court collisions, bounded assist movement, finite network data and physically unreachable hard-CPU shots. The 81-shot AI simulation and production TypeScript/Vite build pass.
 
 The production standalone file was manually checked in the existing PC browser: half-court practice, serve/bounce flow, CPU movement/scoring, and selecting Auto movement worked. The automated Edge smoke runner could not launch inside the restricted Work environment (Edge terminated while opening its profile/SSL logging), so its assertions are included but not claimed as passed. Real Quest controller feel, teleport/auto comfort, headset performance and connected multiplayer are still pending physical tests.
 

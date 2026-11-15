@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+release/
+.env
+.env.local
+.env.*.local
+handball-desktop.html
+tests/*.png

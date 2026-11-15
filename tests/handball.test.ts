@@ -2,9 +2,9 @@ import {test} from 'node:test';import assert from 'node:assert/strict';import {V
 import {Ball,RADIUS,COURT} from '../src/ball';import {Match} from '../src/match';import {PeerWorld} from '../src/peer-world';
 function match(){const m=new Match();m.reset('online');m.serve(0);return m;}
 test('legal serve bounces on blue then red before return',()=>{const m=match();m.floor(1);m.crossing(-.1);m.floor(-1);assert.equal(m.phase,'rally');assert.equal(m.bounces,1);assert.equal(m.hit(1),true);assert.equal(m.lastHitter,1);});
-test('serve cannot cross the line before its own bounce',()=>{const m=match();m.crossing(-.01);assert.deepEqual(m.score,[0,1]);assert.equal(m.server,1);});
-test('serve must land on own floor first',()=>{const m=match();m.floor(-1);assert.deepEqual(m.score,[0,1]);});
-test('two bounces on serving side lose the point',()=>{const m=match();m.floor(1);m.floor(1);assert.deepEqual(m.score,[0,1]);});
+test('serve cannot cross the line before its own bounce',()=>{const m=match();m.crossing(-.01);assert.deepEqual(m.score,[0,0]);assert.equal(m.server,0);});
+test('serve must land on own floor first',()=>{const m=match();m.floor(-1);assert.deepEqual(m.score,[0,0]);assert.equal(m.phase,'ready');});
+test('two bounces on serving side retry without a point',()=>{const m=match();m.floor(1);m.floor(1);assert.deepEqual(m.score,[0,0]);assert.equal(m.phase,'ready');});
 test('second bounce in receiving half loses a point',()=>{const m=match();m.floor(1);m.floor(-1);m.floor(-2);assert.deepEqual(m.score,[1,0]);});
 test('one own-side bounce on a return stays in play; two loses',()=>{const m=match();m.floor(1);m.floor(-1);m.hit(1);m.floor(-1);assert.deepEqual(m.score,[0,0]);m.floor(-1);assert.deepEqual(m.score,[1,0]);});
 test('return cannot be volleyed before a floor bounce',()=>{const m=match();m.floor(1);m.floor(-1);m.hit(1);assert.equal(m.hit(0),false);assert.deepEqual(m.score,[0,1]);});

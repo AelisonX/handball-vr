@@ -64,7 +64,7 @@ The optional firewall scripts create/remove only the separate Handball local-sub
 
 ## Multiplayer and publication
 
-The inherited two-player WebRTC room/pose/snapshot transport remains. The host arbitrates the new rules, ball ownership, impulse and score. Guest hand actions include bounded angular/contact data. This revision's connected multiplayer has not yet been tested end-to-end. No public Handball signaling service or TURN relay is configured; GitHub Pages practice/CPU do not require either.
+The inherited two-player WebRTC room/pose/snapshot transport remains. The host arbitrates the new rules, ball ownership, impulse and score. Guest hand actions include bounded angular/contact data. This revision's connected multiplayer has not yet been tested end-to-end. The default public signaling endpoint is `wss://handball-vr.onrender.com/multiplayer`, a separate free Render service in Singapore. Automatic deployments are disabled. Free instances can take about a minute to wake after inactivity. Two browser tabs successfully hosted, joined and started a WebRTC match through this service. No TURN relay is configured; cross-network connectivity depends on the networks involved. GitHub Pages practice/CPU do not require signaling.
 
 Existing repository: https://github.com/AelisonX/handball-vr
 

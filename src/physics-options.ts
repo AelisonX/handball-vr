@@ -1,4 +1,4 @@
-export const PHYSICS_DEFAULTS={bounce:.88,hitPower:.92,gravity:9.81,spin:1,airDrag:.01};
+export const PHYSICS_DEFAULTS={bounce:.90,hitPower:1.00,gravity:9.81,spin:1,airDrag:.01};
 export type PhysicsOptions=typeof PHYSICS_DEFAULTS;
 export const PHYSICS_RANGES={bounce:[.65,.98],hitPower:[.6,1.25],gravity:[7,13],spin:[0,2],airDrag:[0,.04]} as const;
 export function validPhysics(value:any):value is PhysicsOptions{return !!value&&Object.entries(PHYSICS_RANGES).every(([key,[min,max]])=>Number.isFinite(value[key])&&value[key]>=min&&value[key]<=max);}

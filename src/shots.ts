@@ -31,8 +31,8 @@ export function friendlyShot(ball:Ball,player:Vector3){
     b.step(1/90,s=>{if(s==='floor'){if(b.p.z<0)own++;else received++;}});
     if(!crossed&&b.p.z>=0){if(own!==1){invalid=true;break;}crossed=true;}
     if(own>1||received>1)break;
-    if(received===1&&b.p.y>=.65&&b.p.y<=1.3){
-     const c=Math.hypot(b.p.x-target.x,b.p.z-target.z)*3+Math.abs(b.p.y-.95)+Math.max(0,b.v.length()-4.2)*.2;
+    if(received===1&&b.p.y>=.75&&b.p.y<=1.55){
+     const c=Math.hypot(b.p.x-target.x,b.p.z-target.z)*3+Math.abs(b.p.y-1.15)+Math.max(0,b.v.length()-4.2)*.2;
      if(c<cost){cost=c;best.copy(v);bestX=b.p.x;}
     }
    }
